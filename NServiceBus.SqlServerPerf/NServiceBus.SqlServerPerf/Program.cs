@@ -37,6 +37,7 @@ namespace NServiceBus.SqlServerPerf
                 concurrency *= 2;
             }
 
+            Console.WriteLine("done.");
             Console.ReadLine();
         }
 
