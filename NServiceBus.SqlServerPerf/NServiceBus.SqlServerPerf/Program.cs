@@ -18,14 +18,19 @@ namespace NServiceBus.SqlServerPerf
         {
             string connectionString = @"FILL IN HERE";
             int numberOfMessages = 5000;
-            int messageSize = 1;
+            int messageSize = 1024;
             int concurrency = 1;
 
             for (int i = 0; i < 9; i++)
             {
-                SingleSendRun(connectionString, messageSize, numberOfMessages, concurrency);
+                for (int j = 0; j < 9; j++)
+                {
+                    SingleSendRun(connectionString, messageSize, numberOfMessages, concurrency);
 
-                SingleReceiveRun(connectionString, messageSize, numberOfMessages, concurrency);
+                    SingleReceiveRun(connectionString, messageSize, numberOfMessages, concurrency);
+
+                    messageSize *= 4;
+                }
 
                 concurrency *= 2;
             }
