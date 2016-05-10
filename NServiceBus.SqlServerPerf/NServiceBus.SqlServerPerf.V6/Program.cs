@@ -67,9 +67,7 @@ namespace NServiceBus.SqlServerPerf.V6
                 try
                 {
                     await semaphoreSlim.WaitAsync().ConfigureAwait(false);
-                    await
-                        bus.Send(destination,
-                            new ProduceChocolateBar(true) {LotNumber = i, MaxLotNumber = numberOfMessages});
+                    await bus.Send(destination, new ProduceChocolateBar(true) {LotNumber = i, MaxLotNumber = numberOfMessages}).ConfigureAwait(false);
                 }
                 finally
                 {
