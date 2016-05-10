@@ -116,4 +116,12 @@ namespace NServiceBus.SqlServerPerf.V6
             Console.WriteLine($"Receive: NumberOfMessages {numberOfMessages}, MessageSize {messageSize}, Concurrency { concurrency}, TimeInMs { stopWatch.ElapsedMilliseconds }");
         }
     }
+
+    public class Handler : IHandleMessages<ProduceChocolateBar>
+    {
+        public async Task Handle(ProduceChocolateBar message, IMessageHandlerContext context)
+        {
+            Syncher.SyncEvent.Signal();
+        }
+    }
 }
