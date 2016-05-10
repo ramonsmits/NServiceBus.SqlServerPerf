@@ -41,9 +41,8 @@ namespace NServiceBus.SqlServerPerf
                     END
 
                     EXEC sp_releaseapplock @Resource = '{0}_{1}_lock'
-
-                    TRUNCATE TABLE [{0}].[{1}]
-                  END";
+                  END
+                  TRUNCATE TABLE [{0}].[{1}]";
 
             var commandText = string.Format(ddl, "dbo", queueName);
 

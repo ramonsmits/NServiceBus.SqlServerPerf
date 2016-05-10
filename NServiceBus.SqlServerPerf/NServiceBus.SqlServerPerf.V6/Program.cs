@@ -82,6 +82,7 @@ namespace NServiceBus.SqlServerPerf.V6
             stopWatch.Stop();
 
             bus.Stop().GetAwaiter().GetResult();
+            semaphoreSlim.Dispose();
 
             Console.WriteLine($"Send: NumberOfMessages {numberOfMessages}, MessageSize {messageSize}, Concurrency { concurrency}, TimeInMs { stopWatch.ElapsedMilliseconds }");
         }

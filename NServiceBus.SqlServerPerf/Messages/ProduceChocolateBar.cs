@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Text;
+using NServiceBus;
 
-namespace NServiceBus.SqlServerPerf
+namespace Messages
 {
     public class ProduceChocolateBar : ICommand
     {
