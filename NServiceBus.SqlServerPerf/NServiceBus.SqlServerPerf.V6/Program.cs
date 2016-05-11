@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Messages;
 using NServiceBus.Logging;
 
 namespace NServiceBus.SqlServerPerf.V6
