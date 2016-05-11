@@ -42,7 +42,8 @@ namespace NServiceBus.SqlServerPerf
             Console.ReadLine();
         }
 
-        private static void SingleSendRun(string connectionString, int messageSize, int numberOfMessages, int concurrencyForSends)
+        private static void SingleSendRun(string connectionString, int messageSize, int numberOfMessages,
+            int concurrencyForSends)
         {
 
             DefaultFactory defaultFactory = LogManager.Use<DefaultFactory>();
@@ -61,18 +62,24 @@ namespace NServiceBus.SqlServerPerf
             var destination = "NServiceBus.SqlServerPerf.Destination";
             QueueHelper.CreateQueue(connectionString, destination);
 
-            ProduceChocolateBar.Initialize(messageSize);
+            using (ProduceChocolateBar.Initialize(messageSize))
+            {
+                var stopWatch = Stopwatch.StartNew();
 
-            var stopWatch = Stopwatch.StartNew();
+                Parallel.For(0, numberOfMessages, new ParallelOptions {MaxDegreeOfParallelism = concurrencyForSends},
+                    i =>
+                    {
+                        bus.Send(destination,
+                            new ProduceChocolateBar(true) {LotNumber = i, MaxLotNumber = numberOfMessages});
+                    });
 
-            Parallel.For(0, numberOfMessages, new ParallelOptions {MaxDegreeOfParallelism = concurrencyForSends},
-                i => { bus.Send(destination, new ProduceChocolateBar(true) {LotNumber = i, MaxLotNumber = numberOfMessages}); });
+                stopWatch.Stop();
 
-            stopWatch.Stop();
+                bus.Dispose();
 
-            bus.Dispose();
-
-            Console.WriteLine($"Send: NumberOfMessages {numberOfMessages}, MessageSize {messageSize}, Concurrency { concurrencyForSends}, TimeInMs { stopWatch.ElapsedMilliseconds }");
+                Console.WriteLine(
+                    $"Send: NumberOfMessages {numberOfMessages}, MessageSize {messageSize}, Concurrency {concurrencyForSends}, TimeInMs {stopWatch.ElapsedMilliseconds}");
+            }
         }
 
         private static void SingleReceiveRun(string connectionString, int messageSize, int numberOfMessages, int concurrencyForReceives)
