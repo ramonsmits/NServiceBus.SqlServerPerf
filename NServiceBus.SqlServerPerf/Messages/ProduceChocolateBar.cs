@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Text;
+using System.Threading;
 using NServiceBus;
 
 namespace Messages
@@ -23,7 +24,7 @@ namespace Messages
             Chunk = chunk;
         }
 
-        public static void Initialize(int messageSizeInBytes)
+        public static IDisposable Initialize(int messageSizeInBytes)
         {
             if (string.IsNullOrEmpty(chunk))
             {
@@ -31,6 +32,23 @@ namespace Messages
                 new Random().NextBytes(b);
 
                 chunk = Encoding.UTF8.GetString(b);
+            }
+
+            return new Resetter(() => { chunk = null; });
+        }
+
+        class Resetter : IDisposable
+        {
+            private Action action;
+
+            public Resetter(Action action)
+            {
+                this.action = action;
+            }
+
+            public void Dispose()
+            {
+                action();
             }
         }
     }

@@ -58,32 +58,33 @@ namespace NServiceBus.SqlServerPerf.V6
             var destination = "NServiceBus.SqlServerPerf.Destination";
             QueueHelper.CreateQueue(connectionString, destination);
 
-            ProduceChocolateBar.Initialize(messageSize);
-
-            var stopWatch = Stopwatch.StartNew();
-
-            var semaphoreSlim = new SemaphoreSlim(concurrency);
-            var sendOperations = Enumerable.Range(0, numberOfMessages).Select(async i =>
+            using (ProduceChocolateBar.Initialize(messageSize))
             {
-                try
+                var stopWatch = Stopwatch.StartNew();
+
+                var semaphoreSlim = new SemaphoreSlim(concurrency);
+                var sendOperations = Enumerable.Range(0, numberOfMessages).Select(async i =>
                 {
-                    await semaphoreSlim.WaitAsync().ConfigureAwait(false);
-                    await bus.Send(destination, new ProduceChocolateBar(true) {LotNumber = i, MaxLotNumber = numberOfMessages}).ConfigureAwait(false);
-                }
-                finally
-                {
-                    semaphoreSlim.Release();
-                }
-            });
+                    try
+                    {
+                        await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                        await bus.Send(destination, new ProduceChocolateBar(true) { LotNumber = i, MaxLotNumber = numberOfMessages }).ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        semaphoreSlim.Release();
+                    }
+                });
 
-            Task.WaitAll(sendOperations.ToArray());
+                Task.WaitAll(sendOperations.ToArray());
 
-            stopWatch.Stop();
+                stopWatch.Stop();
 
-            bus.Stop().GetAwaiter().GetResult();
-            semaphoreSlim.Dispose();
+                bus.Stop().GetAwaiter().GetResult();
+                semaphoreSlim.Dispose();
 
-            Console.WriteLine($"Send: NumberOfMessages {numberOfMessages}, MessageSize {messageSize}, Concurrency { concurrency}, TimeInMs { stopWatch.ElapsedMilliseconds }");
+                Console.WriteLine($"Send: NumberOfMessages {numberOfMessages}, MessageSize {messageSize}, Concurrency { concurrency}, TimeInMs { stopWatch.ElapsedMilliseconds }");
+            }
         }
 
         private static void SingleReceiveRun(string connectionString, int messageSize, int numberOfMessages, int concurrency)
