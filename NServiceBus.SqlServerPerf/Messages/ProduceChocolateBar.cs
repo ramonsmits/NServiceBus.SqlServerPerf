@@ -9,11 +9,11 @@ namespace Messages
     {
         private static string chunk;
 
-        public int LotNumber { get; set; }
+        //public int LotNumber { get; set; }
 
-        public int MaxLotNumber { get; set; }
+        //public int MaxLotNumber { get; set; }
 
-        public string Chunk { get; set; }
+        //public string Chunk { get; set; }
 
         public ProduceChocolateBar()
         {
@@ -21,7 +21,7 @@ namespace Messages
 
         public ProduceChocolateBar(bool initialize)
         {
-            Chunk = chunk;
+            //Chunk = chunk;
         }
 
         public static IDisposable Initialize(int messageSizeInBytes)

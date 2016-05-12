@@ -14,15 +14,15 @@ namespace NServiceBus.SqlServerPerf.V6
     {
         static void Main(string[] args)
         {
-            string connectionString = @"FILL IN HERE"; ;
-            int numberOfMessages = 10000;
+            string connectionString = @"Data Source =.\SQLEXPRESS; Integrated Security = True; Database = PerformanceTests; Min Pool Size = 100; Max Pool Size = 1000;";
+            int numberOfMessages = 5000;
             int messageSize = 1024;
             int concurrency = 1;
 
-            for (int i = 0; i < 9; i++)
+            for (int i = 0; i < 11; i++)
             {
                 int originalMessageSize = messageSize;
-                for (int j = 0; j < 9; j++)
+                //for (int j = 0; j < 9; j++)
                 {
                     SingleSendRun(connectionString, messageSize, numberOfMessages, concurrency);
 
@@ -62,29 +62,49 @@ namespace NServiceBus.SqlServerPerf.V6
             {
                 var stopWatch = Stopwatch.StartNew();
 
-                var semaphoreSlim = new SemaphoreSlim(concurrency);
-                var sendOperations = Enumerable.Range(0, numberOfMessages).Select(async i =>
-                {
-                    try
-                    {
-                        await semaphoreSlim.WaitAsync().ConfigureAwait(false);
-                        await bus.Send(destination, new ProduceChocolateBar(true) { LotNumber = i, MaxLotNumber = numberOfMessages }).ConfigureAwait(false);
-                    }
-                    finally
-                    {
-                        semaphoreSlim.Release();
-                    }
-                });
+                //ParallelFor(numberOfMessages, concurrency, bus, destination);
 
-                Task.WaitAll(sendOperations.ToArray());
+                WaitAllSemaphore(numberOfMessages, concurrency, bus, destination);
 
                 stopWatch.Stop();
 
                 bus.Stop().GetAwaiter().GetResult();
-                semaphoreSlim.Dispose();
 
-                Console.WriteLine($"Send: NumberOfMessages {numberOfMessages}, MessageSize {messageSize}, Concurrency { concurrency}, TimeInMs { stopWatch.ElapsedMilliseconds }");
+                var avg = (double)numberOfMessages / stopWatch.ElapsedMilliseconds * 1000;
+                Console.WriteLine($"TX: Concurrency {concurrency,6:N0}, Time {stopWatch.Elapsed.TotalSeconds,4:N1} s, Throughput: {avg,8:N1} msg/s");
             }
+        }
+
+        private static void WaitAllSemaphore(int numberOfMessages, int concurrency, IEndpointInstance bus, string destination)
+        {
+            var semaphoreSlim = new SemaphoreSlim(concurrency);
+            var sendOperations = Enumerable.Range(0, numberOfMessages).Select(async i =>
+            {
+                try
+                {
+                    await semaphoreSlim.WaitAsync().ConfigureAwait(false);
+                    await bus.Send(destination, new ProduceChocolateBar(true) /*{ LotNumber = i, MaxLotNumber = numberOfMessages }*/).ConfigureAwait(false);
+                }
+                finally
+                {
+                    semaphoreSlim.Release();
+                }
+            });
+
+            Task.WaitAll(sendOperations.ToArray());
+            semaphoreSlim.Dispose();
+        }
+
+        private static void ParallelFor(int numberOfMessages, int concurrency, IEndpointInstance bus, string destination)
+        {
+            Parallel.For(0, numberOfMessages,
+                new ParallelOptions { MaxDegreeOfParallelism = concurrency },
+                i =>
+                {
+                    bus.Send(destination, new ProduceChocolateBar(true) /*{ LotNumber = i, MaxLotNumber = numberOfMessages }*/)
+                        .ConfigureAwait(false)
+                        .GetAwaiter().GetResult();
+                });
         }
 
         private static void SingleReceiveRun(string connectionString, int messageSize, int numberOfMessages, int concurrency)
@@ -115,7 +135,8 @@ namespace NServiceBus.SqlServerPerf.V6
             bus.Stop().GetAwaiter().GetResult();
             Syncher.SyncEvent.Dispose();
 
-            Console.WriteLine($"Receive: NumberOfMessages {numberOfMessages}, MessageSize {messageSize}, Concurrency { concurrency}, TimeInMs { stopWatch.ElapsedMilliseconds }");
+            var avg = (double)numberOfMessages / stopWatch.ElapsedMilliseconds * 1000;
+            Console.WriteLine($"RX: Concurrency {concurrency,6:N0}, Time {stopWatch.Elapsed.TotalSeconds,4:N1} s, Throughput: {avg,8:N1} msg/s");
         }
     }
 

@@ -17,21 +17,21 @@ namespace NServiceBus.SqlServerPerf
     {
         static void Main(string[] args)
         {
-            string connectionString = @"FILL IN HERE";
+            string connectionString = @"Data Source =.\SQLEXPRESS; Integrated Security = True; Database = PerformanceTests; Min Pool Size = 100; Max Pool Size = 1000;";
             int numberOfMessages = 5000;
             int messageSize = 1024;
             int concurrency = 1;
 
-            for (int i = 0; i < 9; i++)
+            for (int i = 0; i < 11; i++)
             {
                 int originalMessageSize = messageSize;
-                for (int j = 0; j < 9; j++)
+                //for (int j = 0; j < 9; j++)
                 {
                     SingleSendRun(connectionString, messageSize, numberOfMessages, concurrency);
 
                     SingleReceiveRun(connectionString, messageSize, numberOfMessages, concurrency);
 
-                    messageSize *= 4;
+                    //  messageSize *= 4;
                 }
 
                 messageSize = originalMessageSize;
@@ -66,19 +66,19 @@ namespace NServiceBus.SqlServerPerf
             {
                 var stopWatch = Stopwatch.StartNew();
 
-                Parallel.For(0, numberOfMessages, new ParallelOptions {MaxDegreeOfParallelism = concurrencyForSends},
+                Parallel.For(0, numberOfMessages, new ParallelOptions { MaxDegreeOfParallelism = concurrencyForSends },
                     i =>
                     {
                         bus.Send(destination,
-                            new ProduceChocolateBar(true) {LotNumber = i, MaxLotNumber = numberOfMessages});
+                            new ProduceChocolateBar(true) /*{ LotNumber = i, MaxLotNumber = numberOfMessages }*/);
                     });
 
                 stopWatch.Stop();
 
                 bus.Dispose();
 
-                Console.WriteLine(
-                    $"Send: NumberOfMessages {numberOfMessages}, MessageSize {messageSize}, Concurrency {concurrencyForSends}, TimeInMs {stopWatch.ElapsedMilliseconds}");
+                var avg = (double)numberOfMessages / stopWatch.ElapsedMilliseconds * 1000;
+                Console.WriteLine($"TX: Concurrency {concurrencyForSends,6:N0}, Time {stopWatch.Elapsed.TotalSeconds,4:N1} s, Throughput: {avg,8:N1} msg/s");
             }
         }
 
@@ -102,7 +102,7 @@ namespace NServiceBus.SqlServerPerf
             var stopWatch = Stopwatch.StartNew();
 
             var bus = Bus.Create(configuration).Start();
-            
+
             Syncher.SyncEvent.Wait();
 
             stopWatch.Stop();
@@ -110,7 +110,8 @@ namespace NServiceBus.SqlServerPerf
             bus.Dispose();
             Syncher.SyncEvent.Dispose();
 
-            Console.WriteLine($"Receive: NumberOfMessages {numberOfMessages}, MessageSize {messageSize}, Concurrency { concurrencyForReceives}, TimeInMs { stopWatch.ElapsedMilliseconds }");
+            var avg = (double)numberOfMessages / stopWatch.ElapsedMilliseconds * 1000;
+            Console.WriteLine($"RX: Concurrency {concurrencyForReceives,6:N0}, Time {stopWatch.Elapsed.TotalSeconds,4:N1} s, Throughput: {avg,8:N1} msg/s");
         }
     }
 
